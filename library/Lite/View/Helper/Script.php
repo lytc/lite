@@ -1,0 +1,77 @@
+<?php
+
+namespace Lite\View\Helper;
+
+class Script extends AbstractHelper
+{
+    /**
+     * @var
+     */
+    protected static $_instances = [];
+
+    /**
+     * @var array
+     */
+    protected $_items = [];
+
+    /**
+     * @param \Lite\View $view
+     */
+    public function __construct(\Lite\View $view)
+    {
+        parent::__construct($view);
+        $instance = $this;
+        $view->addMethod('script', function($file = null, array $attributes = []) use($instance) {
+            if ($file) {
+                $instance->append($file, $attributes);
+            }
+            return $instance;
+        });
+    }
+
+    /**
+     * @param \Lite\View $view
+     * @return Escape
+     */
+    public static function getInstance(\Lite\View $view)
+    {
+        $objectHash = spl_object_hash($view);
+
+        if (!isset(self::$_instances[$objectHash])) {
+            self::$_instances[$objectHash] = new self($view);
+        }
+        return self::$_instances[$objectHash];
+    }
+
+    /**
+     * @param string $file
+     * @param array [$attributes]
+     * @return Script
+     */
+    public function append($file, array $attributes = [])
+    {
+        $this->_items[] = ['file' => $file, 'attributes' => $attributes];
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        $result = [];
+
+        foreach ($this->_items as $item) {
+            $attributes = [];
+            foreach ($item['attributes'] as $name => $value) {
+                $attributes[] = sprintf('%s="%s"', $name, $value);
+            }
+
+            $result[] = sprintf('<script src="%s"%s></script>', $item['file'], $attributes? ' ' . implode(' ', $attributes) : '');
+        }
+
+        $result = implode(PHP_EOL, $result);
+
+        return $result;
+    }
+}
